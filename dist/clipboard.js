@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Clipboard = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf) {
@@ -250,29 +250,13 @@ module.exports = function () {
 },{}],7:[function(require,module,exports){
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
-    value: true
-});
+exports.__esModule = true;
 
-var _createClass = (function () {
-    function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ('value' in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-        }
-    }return function (Constructor, protoProps, staticProps) {
-        if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-    };
-})();
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-function _interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : { 'default': obj };
-}
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-        throw new TypeError('Cannot call a class as a function');
-    }
-}
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var _toggleSelection = require('toggle-selection');
 
@@ -300,175 +284,166 @@ var ClipboardAction = (function () {
      * @param {Object} options
      */
 
-    _createClass(ClipboardAction, [{
-        key: 'resolveOptions',
-        value: function resolveOptions() {
-            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    ClipboardAction.prototype.resolveOptions = function resolveOptions() {
+        var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-            this.action = options.action;
-            this.emitter = options.emitter;
-            this.target = options.target;
-            this.text = options.text;
-            this.trigger = options.trigger;
+        this.action = options.action;
+        this.emitter = options.emitter;
+        this.target = options.target;
+        this.text = options.text;
+        this.trigger = options.trigger;
 
-            this.selectedText = '';
+        this.selectedText = '';
+    };
+
+    /**
+     * Decides which selection strategy is going to be applied based
+     * on the existence of `text` and `target` properties.
+     */
+
+    ClipboardAction.prototype.initSelection = function initSelection() {
+        if (this.text && this.target) {
+            throw new Error('Multiple attributes declared, use either "target" or "text"');
+        } else if (this.text) {
+            this.selectFake();
+        } else if (this.target) {
+            this.selectTarget();
+        } else {
+            throw new Error('Missing required attributes, use either "target" or "text"');
+        }
+    };
+
+    /**
+     * Creates a fake textarea element, sets its value from `text` property,
+     * and makes a selection on it.
+     */
+
+    ClipboardAction.prototype.selectFake = function selectFake() {
+        var _this = this;
+
+        this.removeFake();
+
+        this.fakeHandler = document.body.addEventListener('click', function () {
+            return _this.removeFake();
+        });
+
+        this.fakeElem = document.createElement('textarea');
+        this.fakeElem.style.position = 'absolute';
+        this.fakeElem.style.left = '-9999px';
+        this.fakeElem.style.top = document.body.scrollTop + 'px';
+        this.fakeElem.setAttribute('readonly', '');
+        this.fakeElem.value = this.text;
+        this.selectedText = this.text;
+
+        document.body.appendChild(this.fakeElem);
+
+        this.fakeElem.select();
+        this.copyText();
+    };
+
+    /**
+     * Only removes the fake element after another click event, that way
+     * an user can hit `Ctrl+C` to copy because selection still exists.
+     */
+
+    ClipboardAction.prototype.removeFake = function removeFake() {
+        if (this.fakeHandler) {
+            document.body.removeEventListener('click');
+            this.fakeHandler = null;
         }
 
-        /**
-         * Decides which selection strategy is going to be applied based
-         * on the existence of `text` and `target` properties.
-         */
-    }, {
-        key: 'initSelection',
-        value: function initSelection() {
-            if (this.text && this.target) {
-                throw new Error('Multiple attributes declared, use either "target" or "text"');
-            } else if (this.text) {
-                this.selectFake();
-            } else if (this.target) {
-                this.selectTarget();
-            } else {
-                throw new Error('Missing required attributes, use either "target" or "text"');
-            }
+        if (this.fakeElem) {
+            document.body.removeChild(this.fakeElem);
+            this.fakeElem = null;
+        }
+    };
+
+    /**
+     * Selects the content from element passed on `target` property.
+     */
+
+    ClipboardAction.prototype.selectTarget = function selectTarget() {
+        if (this.target.nodeName === 'INPUT' || this.target.nodeName === 'TEXTAREA') {
+            this.target.select();
+            this.selectedText = this.target.value;
+        } else {
+            var reselectPrevious = _toggleSelection2['default']();
+            var range = document.createRange();
+            var selection = window.getSelection();
+
+            range.selectNodeContents(this.target);
+            selection.addRange(range);
+            this.selectedText = selection.toString();
+            reselectPrevious();
         }
 
-        /**
-         * Creates a fake textarea element, sets its value from `text` property,
-         * and makes a selection on it.
-         */
-    }, {
-        key: 'selectFake',
-        value: function selectFake() {
-            var _this = this;
+        this.copyText();
+    };
 
-            this.removeFake();
+    /**
+     * Executes the copy operation based on the current selection.
+     */
 
-            this.fakeHandler = document.body.addEventListener('click', function () {
-                return _this.removeFake();
+    ClipboardAction.prototype.copyText = function copyText() {
+        var succeeded = undefined;
+
+        try {
+            succeeded = document.execCommand(this.action);
+        } catch (err) {
+            succeeded = false;
+        }
+
+        this.handleResult(succeeded);
+    };
+
+    /**
+     * Fires an event based on the copy operation result.
+     * @param {Boolean} succeeded
+     */
+
+    ClipboardAction.prototype.handleResult = function handleResult(succeeded) {
+        if (succeeded) {
+            this.emitter.emit('success', {
+                action: this.action,
+                text: this.selectedText,
+                trigger: this.trigger,
+                clearSelection: this.clearSelection.bind(this)
             });
+        } else {
+            this.emitter.emit('error', {
+                action: this.action,
+                trigger: this.trigger,
+                clearSelection: this.clearSelection.bind(this)
+            });
+        }
+    };
 
-            this.fakeElem = document.createElement('textarea');
-            this.fakeElem.style.position = 'absolute';
-            this.fakeElem.style.left = '-9999px';
-            this.fakeElem.style.top = document.body.scrollTop + 'px';
-            this.fakeElem.setAttribute('readonly', '');
-            this.fakeElem.value = this.text;
-            this.selectedText = this.text;
+    /**
+     * Removes current selection and focus from `target` element.
+     */
 
-            document.body.appendChild(this.fakeElem);
-
-            this.fakeElem.select();
-            this.copyText();
+    ClipboardAction.prototype.clearSelection = function clearSelection() {
+        if (this.target) {
+            this.target.blur();
         }
 
-        /**
-         * Only removes the fake element after another click event, that way
-         * an user can hit `Ctrl+C` to copy because selection still exists.
-         */
-    }, {
-        key: 'removeFake',
-        value: function removeFake() {
-            if (this.fakeHandler) {
-                document.body.removeEventListener('click');
-                this.fakeHandler = null;
-            }
+        window.getSelection().removeAllRanges();
+    };
 
-            if (this.fakeElem) {
-                document.body.removeChild(this.fakeElem);
-                this.fakeElem = null;
-            }
-        }
+    /**
+     * Sets the `action` to be performed which can be either 'copy' or 'cut'.
+     * @param {String} action
+     */
 
-        /**
-         * Selects the content from element passed on `target` property.
-         */
-    }, {
-        key: 'selectTarget',
-        value: function selectTarget() {
-            if (this.target.nodeName === 'INPUT' || this.target.nodeName === 'TEXTAREA') {
-                this.target.select();
-                this.selectedText = this.target.value;
-            } else {
-                var reselectPrevious = (0, _toggleSelection2['default'])();
-                var range = document.createRange();
-                var selection = window.getSelection();
+    /**
+     * Destroy lifecycle.
+     */
 
-                range.selectNodeContents(this.target);
-                selection.addRange(range);
-                this.selectedText = selection.toString();
-                reselectPrevious();
-            }
+    ClipboardAction.prototype.destroy = function destroy() {
+        this.removeFake();
+    };
 
-            this.copyText();
-        }
-
-        /**
-         * Executes the copy operation based on the current selection.
-         */
-    }, {
-        key: 'copyText',
-        value: function copyText() {
-            var succeeded = undefined;
-
-            try {
-                succeeded = document.execCommand(this.action);
-            } catch (err) {
-                succeeded = false;
-            }
-
-            this.handleResult(succeeded);
-        }
-
-        /**
-         * Fires an event based on the copy operation result.
-         * @param {Boolean} succeeded
-         */
-    }, {
-        key: 'handleResult',
-        value: function handleResult(succeeded) {
-            if (succeeded) {
-                this.emitter.emit('success', {
-                    action: this.action,
-                    text: this.selectedText,
-                    trigger: this.trigger,
-                    clearSelection: this.clearSelection.bind(this)
-                });
-            } else {
-                this.emitter.emit('error', {
-                    action: this.action,
-                    trigger: this.trigger,
-                    clearSelection: this.clearSelection.bind(this)
-                });
-            }
-        }
-
-        /**
-         * Removes current selection and focus from `target` element.
-         */
-    }, {
-        key: 'clearSelection',
-        value: function clearSelection() {
-            if (this.target) {
-                this.target.blur();
-            }
-
-            window.getSelection().removeAllRanges();
-        }
-
-        /**
-         * Sets the `action` to be performed which can be either 'copy' or 'cut'.
-         * @param {String} action
-         */
-    }, {
-        key: 'destroy',
-
-        /**
-         * Destroy lifecycle.
-         */
-        value: function destroy() {
-            this.removeFake();
-        }
-    }, {
+    _createClass(ClipboardAction, [{
         key: 'action',
         set: function set() {
             var action = arguments.length <= 0 || arguments[0] === undefined ? 'copy' : arguments[0];
@@ -523,55 +498,13 @@ module.exports = exports['default'];
 },{"toggle-selection":6}],8:[function(require,module,exports){
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
-    value: true
-});
+exports.__esModule = true;
 
-var _createClass = (function () {
-    function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ('value' in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-        }
-    }return function (Constructor, protoProps, staticProps) {
-        if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-    };
-})();
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-var _get = function get(_x2, _x3, _x4) {
-    var _again = true;_function: while (_again) {
-        var object = _x2,
-            property = _x3,
-            receiver = _x4;desc = parent = getter = undefined;_again = false;if (object === null) object = Function.prototype;var desc = Object.getOwnPropertyDescriptor(object, property);if (desc === undefined) {
-            var parent = Object.getPrototypeOf(object);if (parent === null) {
-                return undefined;
-            } else {
-                _x2 = parent;_x3 = property;_x4 = receiver;_again = true;continue _function;
-            }
-        } else if ('value' in desc) {
-            return desc.value;
-        } else {
-            var getter = desc.get;if (getter === undefined) {
-                return undefined;
-            }return getter.call(receiver);
-        }
-    }
-};
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-function _interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : { 'default': obj };
-}
-
-function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-        throw new TypeError('Cannot call a class as a function');
-    }
-}
-
-function _inherits(subClass, superClass) {
-    if (typeof superClass !== 'function' && superClass !== null) {
-        throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass);
-    }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-}
+function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var _clipboardAction = require('./clipboard-action');
 
@@ -601,7 +534,7 @@ var Clipboard = (function (_Emitter) {
     function Clipboard(selector, options) {
         _classCallCheck(this, Clipboard);
 
-        _get(Object.getPrototypeOf(Clipboard.prototype), 'constructor', this).call(this);
+        _Emitter.call(this);
 
         this.resolveOptions(options);
         this.delegateClick(selector);
@@ -619,108 +552,98 @@ var Clipboard = (function (_Emitter) {
      * @param {Object} options
      */
 
-    _createClass(Clipboard, [{
-        key: 'resolveOptions',
-        value: function resolveOptions() {
-            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    Clipboard.prototype.resolveOptions = function resolveOptions() {
+        var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-            this.action = typeof options.action === 'function' ? options.action : this.defaultAction;
-            this.target = typeof options.target === 'function' ? options.target : this.defaultTarget;
-            this.text = typeof options.text === 'function' ? options.text : this.defaultText;
+        this.action = typeof options.action === 'function' ? options.action : this.defaultAction;
+        this.target = typeof options.target === 'function' ? options.target : this.defaultTarget;
+        this.text = typeof options.text === 'function' ? options.text : this.defaultText;
+    };
+
+    /**
+     * Delegates a click event on the passed selector.
+     * @param {String} selector
+     */
+
+    Clipboard.prototype.delegateClick = function delegateClick(selector) {
+        var _this = this;
+
+        this.binding = _delegateEvents2['default'].bind(document.body, selector, 'click', function (e) {
+            return _this.onClick(e);
+        });
+    };
+
+    /**
+     * Undelegates a click event on body.
+     * @param {String} selector
+     */
+
+    Clipboard.prototype.undelegateClick = function undelegateClick() {
+        _delegateEvents2['default'].unbind(document.body, 'click', this.binding);
+    };
+
+    /**
+     * Defines a new `ClipboardAction` on each click event.
+     * @param {Event} e
+     */
+
+    Clipboard.prototype.onClick = function onClick(e) {
+        if (this.clipboardAction) {
+            this.clipboardAction = null;
         }
 
-        /**
-         * Delegates a click event on the passed selector.
-         * @param {String} selector
-         */
-    }, {
-        key: 'delegateClick',
-        value: function delegateClick(selector) {
-            var _this = this;
+        this.clipboardAction = new _clipboardAction2['default']({
+            action: this.action(e.delegateTarget),
+            target: this.target(e.delegateTarget),
+            text: this.text(e.delegateTarget),
+            trigger: e.delegateTarget,
+            emitter: this
+        });
+    };
 
-            this.binding = _delegateEvents2['default'].bind(document.body, selector, 'click', function (e) {
-                return _this.onClick(e);
-            });
+    /**
+     * Default `action` lookup function.
+     * @param {Element} trigger
+     */
+
+    Clipboard.prototype.defaultAction = function defaultAction(trigger) {
+        return getAttributeValue('action', trigger);
+    };
+
+    /**
+     * Default `target` lookup function.
+     * @param {Element} trigger
+     */
+
+    Clipboard.prototype.defaultTarget = function defaultTarget(trigger) {
+        var selector = getAttributeValue('target', trigger);
+
+        if (selector) {
+            return document.querySelector(selector);
         }
+    };
 
-        /**
-         * Undelegates a click event on body.
-         * @param {String} selector
-         */
-    }, {
-        key: 'undelegateClick',
-        value: function undelegateClick() {
-            _delegateEvents2['default'].unbind(document.body, 'click', this.binding);
+    /**
+     * Default `text` lookup function.
+     * @param {Element} trigger
+     */
+
+    Clipboard.prototype.defaultText = function defaultText(trigger) {
+        return getAttributeValue('text', trigger);
+    };
+
+    /**
+     * Destroy lifecycle.
+     */
+
+    Clipboard.prototype.destroy = function destroy() {
+        this.undelegateClick();
+
+        if (this.clipboardAction) {
+            this.clipboardAction.destroy();
+            this.clipboardAction = null;
         }
-
-        /**
-         * Defines a new `ClipboardAction` on each click event.
-         * @param {Event} e
-         */
-    }, {
-        key: 'onClick',
-        value: function onClick(e) {
-            if (this.clipboardAction) {
-                this.clipboardAction = null;
-            }
-
-            this.clipboardAction = new _clipboardAction2['default']({
-                action: this.action(e.delegateTarget),
-                target: this.target(e.delegateTarget),
-                text: this.text(e.delegateTarget),
-                trigger: e.delegateTarget,
-                emitter: this
-            });
-        }
-
-        /**
-         * Default `action` lookup function.
-         * @param {Element} trigger
-         */
-    }, {
-        key: 'defaultAction',
-        value: function defaultAction(trigger) {
-            return getAttributeValue('action', trigger);
-        }
-
-        /**
-         * Default `target` lookup function.
-         * @param {Element} trigger
-         */
-    }, {
-        key: 'defaultTarget',
-        value: function defaultTarget(trigger) {
-            var selector = getAttributeValue('target', trigger);
-
-            if (selector) {
-                return document.querySelector(selector);
-            }
-        }
-
-        /**
-         * Default `text` lookup function.
-         * @param {Element} trigger
-         */
-    }, {
-        key: 'defaultText',
-        value: function defaultText(trigger) {
-            return getAttributeValue('text', trigger);
-        }
-
-        /**
-         * Destroy lifecycle.
-         */
-    }, {
-        key: 'destroy',
-        value: function destroy() {
-            this.undelegateClick();
-
-            if (this.clipboardAction) {
-                this.clipboardAction.destroy();
-                this.clipboardAction = null;
-            }
-        }
-    }]);
+    };
 
     return Clipboard;
 })(_tinyEmitter2['default']);
@@ -738,4 +661,5 @@ function getAttributeValue(suffix, element) {
 exports['default'] = Clipboard;
 module.exports = exports['default'];
 
-},{"./clipboard-action":7,"delegate-events":3,"tiny-emitter":5}]},{},[8]);
+},{"./clipboard-action":7,"delegate-events":3,"tiny-emitter":5}]},{},[8])(8)
+});
